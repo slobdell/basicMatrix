@@ -119,6 +119,21 @@ func (m *Matrix) Add(otherMatrix *Matrix) *Matrix {
 	}
 }
 
+func (m *Matrix) Subtract(otherMatrix *Matrix) *Matrix {
+	if m.rows != otherMatrix.rows || m.columns != otherMatrix.columns {
+		panic("Cannot add matrices of different dimensions")
+	}
+	newData := make([]float64, len(m.data), len(m.data))
+	for i := 0; i < len(m.data); i++ {
+		newData[i] = m.data[i] - otherMatrix.data[i]
+	}
+	return &Matrix{
+		data:    newData,
+		rows:    m.rows,
+		columns: m.columns,
+	}
+}
+
 func (m *Matrix) Determinant() float64 {
 	if m.rows != m.columns {
 		panic("Cannot take the determinant of a non-square matrix")
