@@ -3,6 +3,7 @@ package basicMatrix
 import (
 	"errors"
 	"fmt"
+	"math"
 )
 
 type Matrix struct {
@@ -162,6 +163,7 @@ func (m *Matrix) MatrixExcludingRowAndCol(omitRow, omitCol int) *Matrix {
 	newData := make([]float64, newSize, newSize)
 
 	newIndex := 0
+	// SBL I THINK THERE MIGHT BE AN ERROR HERE...m.row == omitRow??
 	for i := 0; i < len(m.data); i++ {
 		if (i / m.columns) == omitRow {
 			continue
@@ -186,6 +188,14 @@ func (m *Matrix) Inverse() (*Matrix, error) {
 		return nil, errors.New("Cannot take inverse of matrix")
 	}
 	newMatrix := NewMatrix(m.rows, m.columns)
+	if m.rows == 1 && m.columns == 1 {
+		// this is a special case hack, but it should be ok...
+		if m.Get(0, 0) == 0.0 {
+			return nil, errors.New("Cannot take inverse of matrix")
+		}
+		newMatrix.Put(0, 0, 1.0/m.Get(0, 0))
+		return newMatrix, nil
+	}
 	for r := 0; r < m.rows; r++ {
 		sign := 1
 		if r%2 == 1 {
@@ -212,4 +222,61 @@ func (m *Matrix) PrettyPrint() {
 		}
 		fmt.Printf("\n")
 	}
+}
+
+func (m *Matrix) GetCholeskyDecomposition() (*Matrix, error) {
+	cholesky := NewMatrix(m.rows, m.rows)
+	preSqrtL := m.Get(0, 0)
+	if preSqrtL < 0.0 {
+		return nil, errors.New("Cannot take cholesky decomposition")
+	}
+	previousL := NewMatrix(1, 1)
+	previousL.Put(0, 0, math.Sqrt(preSqrtL))
+
+	for r := 0; r < previousL.rows; r++ {
+		for c := 0; c < previousL.columns; c++ {
+			cholesky.Put(r, c, previousL.Get(r, c))
+		}
+	}
+
+	for aLength := 1; aLength < m.rows; aLength++ {
+		nextVector := NewMatrix(aLength, 1)
+		for r := 0; r < aLength; r++ {
+			nextVector.Put(r, 0, m.Get(r, aLength))
+		}
+		diagA := m.Get(aLength, aLength)
+
+		// previousL * intermediate = nextVector
+		inversePrevious, err := previousL.Inverse()
+		if err != nil {
+			return nil, errors.New("Cannot take cholesky because of inverse matrix failure")
+		}
+		intermediate := inversePrevious.MultipliedBy(nextVector)
+
+		preSqrtL = diagA - intermediate.Transpose().MultipliedBy(intermediate).Get(0, 0)
+		if preSqrtL < 0.0 {
+			return nil, errors.New(fmt.Sprintf("Cannot take cholesky decomposition"))
+		}
+		diagVal := math.Sqrt(preSqrtL)
+		temp := NewMatrix(previousL.rows+1, previousL.columns+1)
+		for r := 0; r < previousL.rows; r++ {
+			for c := 0; c < previousL.columns; c++ {
+				temp.Put(r, c, previousL.Get(r, c))
+			}
+		}
+		previousL = temp
+		previousL.Put(aLength, aLength, diagVal)
+
+		for c := 0; c < aLength; c++ {
+			previousL.Put(aLength, c, intermediate.Get(c, 0))
+		}
+
+		for r := 0; r < previousL.rows; r++ {
+			for c := 0; c < previousL.columns; c++ {
+				cholesky.Put(r, c, previousL.Get(r, c))
+			}
+		}
+	}
+	return cholesky, nil
+	// TODO: to migreate to Java, make sure I account for my inverse matrix function, make this piece more efficient
 }

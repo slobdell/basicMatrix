@@ -173,6 +173,21 @@ func TestDeterminant(t *testing.T) {
 	}
 }
 
+func TestInverse1x1(t *testing.T) {
+	mat1 := basicMatrix.NewMatrix(1, 1)
+	mat1.Put(0, 0, 5)
+
+	inv, err := mat1.Inverse()
+
+	if err != nil {
+		t.Error("Should have been able to take inverse of 1x1")
+	}
+
+	if inv.Get(0, 0) != 0.2 {
+		t.Error(fmt.Sprintf("Expected 0.2 but got %f", inv.Get(0, 0)))
+	}
+}
+
 func TestInverse(t *testing.T) {
 	/*
 		mat1 := basicMatrix.NewMatrix(2, 2)
@@ -211,16 +226,96 @@ func TestInverse(t *testing.T) {
 	mat1.Put(4, 2, 1)
 	mat1.Put(4, 3, 1)
 	mat1.Put(4, 4, 1)
+}
 
-	// for any matrix with even dimensions, every odd INDEX per row has wrong sign
+func TestCholeskyDecomposition(t *testing.T) {
+	mat := basicMatrix.NewMatrix(4, 4)
 
-	mat1.PrettyPrint()
+	mat.Put(0, 0, 16)
+	mat.Put(0, 1, 4)
+	mat.Put(0, 2, 4)
+	mat.Put(0, 3, -4)
 
-	fmt.Printf("determinant of mat: %f\n", mat1.Determinant())
-	fmt.Printf("\n\n")
+	mat.Put(1, 0, 4)
+	mat.Put(1, 1, 10)
+	mat.Put(1, 2, 4)
+	mat.Put(1, 3, 2)
 
-	result, err := mat1.Inverse()
-	if err == nil {
-		result.PrettyPrint()
+	mat.Put(2, 0, 4)
+	mat.Put(2, 1, 4)
+	mat.Put(2, 2, 6)
+	mat.Put(2, 3, -2)
+
+	mat.Put(3, 0, -4)
+	mat.Put(3, 1, 2)
+	mat.Put(3, 2, -2)
+	mat.Put(3, 3, 4)
+
+	expected := basicMatrix.NewMatrix(4, 4)
+	expected.Put(0, 0, 4)
+
+	expected.Put(1, 0, 1)
+	expected.Put(1, 1, 3)
+
+	expected.Put(2, 0, 1)
+	expected.Put(2, 1, 1)
+	expected.Put(2, 2, 2)
+
+	expected.Put(3, 0, -1)
+	expected.Put(3, 1, 1)
+	expected.Put(3, 2, -1)
+	expected.Put(3, 3, 1)
+	choleskyDecomposition, err := mat.GetCholeskyDecomposition()
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	for r := 0; r < 4; r++ {
+		for c := 0; c < 4; c++ {
+			if expected.Get(r, c) != choleskyDecomposition.Get(r, c) {
+				t.Error(fmt.Sprintf("Expected != Cholesky at %d, %d. Expected %f, got %f", r, c, expected.Get(r, c), choleskyDecomposition.Get(r, c)))
+			}
+		}
+	}
+}
+
+func TestCholeskyDecomposition2(t *testing.T) {
+	mat := basicMatrix.NewMatrix(3, 3)
+
+	mat.Put(0, 0, 4)
+	mat.Put(0, 1, 12)
+	mat.Put(0, 2, -16)
+
+	mat.Put(1, 0, 12)
+	mat.Put(1, 1, 37)
+	mat.Put(1, 2, -43)
+
+	mat.Put(2, 0, -16)
+	mat.Put(2, 1, -43)
+	mat.Put(2, 2, 98)
+
+	expected := basicMatrix.NewMatrix(3, 3)
+	expected.Put(0, 0, 2)
+
+	expected.Put(1, 0, 6)
+	expected.Put(1, 1, 1)
+
+	expected.Put(2, 0, -8)
+	expected.Put(2, 1, 5)
+	expected.Put(2, 2, 3)
+
+	choleskyDecomposition, err := mat.GetCholeskyDecomposition()
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	for r := 0; r < 3; r++ {
+		for c := 0; c < 3; c++ {
+			if expected.Get(r, c) != choleskyDecomposition.Get(r, c) {
+				t.Error(fmt.Sprintf("Expected != Cholesky at %d, %d. Expected %f, got %f", r, c, expected.Get(r, c), choleskyDecomposition.Get(r, c)))
+			}
+		}
 	}
 }
